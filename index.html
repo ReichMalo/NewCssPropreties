@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nouveautés CSS</title>
+<meta name="description" content="Cahier de rattrapage sur les fonctionnalités CSS récentes : explications, démos live, tableaux de compatibilité et solutions de repli.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="entete">
+  <h1>Nouveautés CSS et styles surprenants</h1>
+</header>
+
+<nav class="toc" id="sommaire-haut">
+  <ul class="sommaire">
+    <li><a href="#transitions" class="lien-bleu">Transitions de vue</a></li>
+    <li><a href="#has" class="lien-corail">:has()</a></li>
+    <li><a href="#container" class="lien-or">@container</a></li>
+    <li><a href="#colormix" class="lien-turquoise">color-mix()</a></li>
+    <li><a href="#balance" class="lien-sauge">text-wrap: balance</a></li>
+    <li><a href="#scope" class="lien-mauve">@scope</a></li>
+    <li><a href="#lightdark" class="lien-rose">light-dark()</a></li>
+    <li><a href="#property" class="lien-indigo">@property</a></li>
+    <li><a href="#starting" class="lien-citron">@starting-style</a></li>
+    <li><a href="#popover" class="lien-rouille">popover</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <section class="fiche fiche-bleu" id="transitions">
+    <p class="fiche-date">≈ 2023 – 2025</p>
+    <h2>View Transitions <span class="fiche-fn">document.startViewTransition()</span></h2>
+
+    <p class="fiche-explication">L'API View Transitions permet d'animer le passage d'un état du DOM à un autre sans écrire d'animation image par image en JavaScript. On enveloppe la mise à jour du contenu dans <code>document.startViewTransition()</code> : le navigateur capture l'état avant, applique le changement, capture l'état après, puis anime automatiquement le fondu entre les deux via des pseudo-éléments (<code>::view-transition-old</code>, <code>::view-transition-new</code>) que l'on personnalise en CSS. Il existe aussi une variante multi-documents (<code>@view-transition</code>) pour animer la navigation entre deux vraies pages HTML, mais elle est loin d'être disponible partout. La démo ci-dessous utilise la version même document, plus fiable aujourd'hui.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>function changerDeVue(cible) {
+  const appliquer = () => afficherPanneau(cible);
+
+  if (document.startViewTransition) {
+    document.startViewTransition(appliquer);
+  } else {
+    appliquer();
+  }
+}</code></pre>
+        <pre><code>.ecran-demo { view-transition-name: ecran-demo; }
+
+::view-transition-new(ecran-demo) {
+  animation: entree .35s ease;
+}</code></pre>
+        <p class="fallback">Sans l'API, <code>document.startViewTransition</code> vaut <code>undefined</code> : on le vérifie avant de l'appeler et le contenu change quand même, juste sans animation.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="demo-transitions">
+          <div class="demo-onglets">
+            <button type="button" class="onglet est-actif" data-cible="accueil">Accueil</button>
+            <button type="button" class="onglet" data-cible="autre">Autre page</button>
+          </div>
+          <div class="ecran-demo">
+            <div id="panneau-accueil" class="panneau">
+              <h3>Accueil</h3>
+              <p>Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem.</p>
+            </div>
+            <div id="panneau-autre" class="panneau" hidden>
+              <h3>Autre page</h3>
+              <p>Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — View Transitions (même document)</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>111 (mars 2023)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>111</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>18 (sept. 2024)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>144 (oct. 2025)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/API/View_Transition_API" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/view-transitions" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-corail" id="has">
+    <p class="fiche-date">≈ 2022 – 2023</p>
+    <h2>:has() <span class="fiche-fn">pseudo-classe relationnelle</span></h2>
+
+    <p class="fiche-explication"><code>:has()</code> cible un élément en fonction de ce qu'il contient, ce que CSS ne savait pas faire jusque-là. Avec <code>.carte:has(input:checked)</code>, on sélectionne une carte parce qu'elle contient une case cochée ; avec <code>form:has(:invalid)</code>, on cible un formulaire parce qu'il contient un champ invalide. On l'appelle parfois le sélecteur parent du CSS moderne : il remplace une foule de petits scripts JavaScript qui ne servaient qu'à ajouter une classe selon l'état d'un enfant.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>.carte:has(input:checked) {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+form:has(:invalid) {
+  outline: 2px solid tomato;
+}</code></pre>
+        <p class="fallback">On teste le support avec <code>@supports selector(:has(a))</code> et on fournit une alternative en JavaScript dans un bloc <code>@supports not selector(:has(a))</code>. Sans <code>:has()</code>, l'interface reste utilisable, elle perd juste la mise en valeur.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="demo-has">
+          <label class="carte">
+            <input type="radio" name="formule" value="decouverte">
+            <span class="carte-titre">Découverte</span>
+            <span class="carte-prix">0 €</span>
+          </label>
+          <label class="carte">
+            <input type="radio" name="formule" value="standard" checked>
+            <span class="carte-titre">Standard</span>
+            <span class="carte-prix">9 €/mois</span>
+          </label>
+          <label class="carte">
+            <input type="radio" name="formule" value="pro">
+            <span class="carte-titre">Pro</span>
+            <span class="carte-prix">19 €/mois</span>
+          </label>
+        </div>
+        <p class="demo-legende">Aucun JavaScript : la mise en avant vient uniquement de <code>:has()</code>.</p>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — :has()</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>105 (août 2022)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>105</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>15.4 (mars 2022)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>121 (déc. 2023)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/:has" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/css-has" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-or" id="container">
+    <p class="fiche-date">≈ 2022 – 2023</p>
+    <h2>@container <span class="fiche-fn">container queries</span></h2>
+
+    <p class="fiche-explication">Les container queries adaptent le style d'un composant à la taille de son propre conteneur, et non plus à celle de la fenêtre. On déclare un élément conteneur avec <code>container-type: inline-size</code>, puis on écrit des règles <code>@container (min-width: …)</code> qui ne s'appliquent que si ce conteneur atteint la largeur donnée. Précieux pour des composants réutilisables qui doivent réagir à l'espace qui leur est réellement alloué, dans une colonne étroite ou un grand espace.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>.conteneur {
+  container-type: inline-size;
+}
+
+.carte-produit { display: flex; flex-direction: column; }
+
+@container (min-width: 360px) {
+  .carte-produit { flex-direction: row; }
+}</code></pre>
+        <p class="fallback">Une règle <code>container-type</code> non reconnue est simplement ignorée : la mise en page reprend son état par défaut, qui doit donc être choisi comme base saine dès le départ.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="demo-container">
+          <div class="cq-carte">
+            <div class="cq-vignette"></div>
+            <div>
+              <p class="cq-titre">Radio de poche</p>
+              <p class="cq-desc">La mise en page dépend de la largeur de la boîte, pas de votre écran.</p>
+            </div>
+          </div>
+        </div>
+        <p class="demo-legende">Faites glisser le coin en bas à droite pour redimensionner.</p>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — @container (size queries)</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>105 (août 2022)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>105</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>16 (sept. 2022)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>110 (fév. 2023)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/@container" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/css-container-queries" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-turquoise" id="colormix">
+    <p class="fiche-date">≈ 2022 – 2023</p>
+    <h2>color-mix() <span class="fiche-fn">fonction de mélange</span></h2>
+
+    <p class="fiche-explication"><code>color-mix()</code> mélange deux couleurs directement en CSS, dans un espace colorimétrique choisi, sans précalculer une valeur hexadécimale en amont. On peut dériver des variantes (survol, désactivé, teinte plus claire) à partir d'une seule couleur de référence stockée dans une variable CSS, et garder un thème cohérent avec beaucoup moins de valeurs codées en dur.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>:root { --couleur-base: #2f9c8a; }
+
+.pastille {
+  background: color-mix(
+    in oklch,
+    var(--couleur-base) var(--taux, 50%),
+    white
+  );
+}</code></pre>
+        <p class="fallback">Une déclaration CSS invalide est ignorée en bloc : il suffit de déclarer une couleur de secours juste avant la ligne utilisant <code>color-mix()</code>, le navigateur qui ne la comprend pas garde la précédente.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <input type="range" min="0" max="100" value="50" id="mix-curseur">
+        <div class="mix-pastille" id="mix-pastille" style="--taux:50%"></div>
+        <p class="demo-legende"><span id="mix-sortie">50%</span> de couleur de base, le reste en blanc.</p>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — color-mix()</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>111 (mars 2023)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>111</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>16.2 (déc. 2022)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>113 (mai 2023)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/color-mix" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/mdn-css_types_color_color-mix" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-sauge" id="balance">
+    <p class="fiche-date">≈ 2023 – 2024</p>
+    <h2>text-wrap: balance <span class="fiche-fn">équilibrage typographique</span></h2>
+
+    <p class="fiche-explication"><code>text-wrap: balance</code> demande au navigateur de répartir plus équitablement les mots d'un titre sur ses lignes, pour éviter qu'une dernière ligne se retrouve avec un seul mot esseulé. Avant, il fallait insérer des <code>&lt;br&gt;</code> manuels ou du JavaScript pour mesurer le texte. Par souci de performance, chaque moteur limite l'équilibrage à quelques lignes, ce qui en fait un outil taillé pour les titres, pas pour de longs paragraphes.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>h2.titre-equilibre {
+  text-wrap: balance;
+}</code></pre>
+        <p class="fallback">Aucun risque : les navigateurs qui ne connaissent pas cette valeur retombent sur le retour à la ligne normal, qui reste parfaitement lisible. Pas besoin de <code>@supports</code>.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="demo-balance">
+          <div>
+            <p class="etiquette-petite">text-wrap: wrap</p>
+            <h3 class="balance-titre balance-defaut">Les nouveautés CSS que votre prof n'a peut-être pas encore montrées en cours</h3>
+          </div>
+          <div>
+            <p class="etiquette-petite">text-wrap: balance</p>
+            <h3 class="balance-titre balance-equilibre">Les nouveautés CSS que votre prof n'a peut-être pas encore montrées en cours</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — text-wrap: balance</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>114 (mai 2023)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>114</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>17.5 (mai 2024)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>121 (déc. 2023)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/text-wrap" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/css-text-wrap-balance" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-mauve" id="scope">
+    <p class="fiche-date">≈ 2023 – 2025</p>
+    <h2>@scope <span class="fiche-fn">encapsulation de styles</span></h2>
+
+    <p class="fiche-explication"><code>@scope</code> limite la portée d'un bloc de règles CSS à une partie précise du DOM, en définissant une racine et, si besoin, une limite au-delà de laquelle les styles ne s'appliquent plus. On peut réutiliser un même nom de classe à plusieurs endroits sans collision, sans préfixer chaque sélecteur ni adopter une convention comme BEM. Chrome l'a proposé dès 2023, mais il a fallu attendre décembre 2025 pour que Firefox l'implémente à son tour et que la fonctionnalité devienne enfin utilisable partout.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>@scope (.zone-scope) {
+  .titre {
+    color: var(--accent);
+    font-weight: 700;
+  }
+}</code></pre>
+        <p class="fallback">Sans support, tout le bloc de règles est ignoré : mieux vaut donc s'en servir comme un filet de sécurité contre les collisions de noms, au-dessus d'une base déjà correctement organisée.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="demo-scope">
+          <div class="scope-boite scope-avec">
+            <p class="etiquette-petite">Avec @scope</p>
+            <p class="titre">Ce titre est stylé par la règle scoped.</p>
+          </div>
+          <div class="scope-boite">
+            <p class="etiquette-petite">Sans @scope</p>
+            <p class="titre">Même classe, style par défaut.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — @scope</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>143 (déc. 2025)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>143</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>26.2 (déc. 2025)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>146 (déc. 2025)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/@scope" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/mdn-css_at-rules_scope" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-rose" id="lightdark">
+    <p class="fiche-date">≈ 2023 – 2024</p>
+    <h2>light-dark() <span class="fiche-fn">couleur selon le thème</span></h2>
+
+    <p class="fiche-explication"><code>light-dark()</code> choisit automatiquement entre deux couleurs selon le thème clair ou sombre actif sur la page, sans écrire une media query <code>prefers-color-scheme</code> séparée pour chaque propriété. On lui donne une couleur claire et une couleur sombre, et il retourne la bonne selon la valeur de <code>color-scheme</code> définie sur l'élément. Avant, il fallait dupliquer chaque déclaration de couleur dans un bloc <code>@media (prefers-color-scheme: dark)</code> à part, ce qui alourdissait vite la feuille de style.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>.boite {
+  color-scheme: light dark;
+  background: light-dark(#ffffff, #1c1c1c);
+  color: light-dark(#111111, #eeeeee);
+}</code></pre>
+        <p class="fallback">Sans support, la déclaration est invalide et ignorée : il suffit de mettre une couleur simple juste avant, qui sert alors de valeur par défaut, et de garder une media query classique en complément si besoin.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="ld-boutons">
+          <button type="button" class="ld-bouton" data-mode="light">Clair</button>
+          <button type="button" class="ld-bouton" data-mode="dark">Sombre</button>
+        </div>
+        <div class="ld-boite" id="ld-boite">Cette boîte change de couleur avec light-dark().</div>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — light-dark()</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>123 (mars 2024)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>123</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>17.5 (mai 2024)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>120 (nov. 2023)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/color_value/light-dark" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/?search=light-dark" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-indigo" id="property">
+    <p class="fiche-date">≈ 2020 – 2024</p>
+    <h2>@property <span class="fiche-fn">variables CSS typées</span></h2>
+
+    <p class="fiche-explication"><code>@property</code> déclare un type pour une variable CSS personnalisée : un angle, une couleur, un nombre. Sans cela, le navigateur traite toute variable CSS comme une simple chaîne de caractères et refuse de l'animer en transition. En donnant un type, on peut par exemple faire tourner un dégradé en transitionnant une variable d'angle, ce qui était impossible avec une variable CSS classique. Elle fait partie des API dites Houdini, qui débloquent des animations auparavant réservées au JavaScript.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>@property --angle {
+  syntax: '&lt;angle&gt;';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.boite {
+  --angle: 0deg;
+  background: conic-gradient(from var(--angle), var(--accent), white);
+  transition: --angle 1s;
+}
+
+.boite:hover { --angle: 360deg; }</code></pre>
+        <p class="fallback">Sans <code>@property</code>, la transition sur la variable est ignorée : le dégradé change de position instantanément au survol, sans animation, mais rien ne casse.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <div class="prop-boite"></div>
+        <p class="demo-legende">Survolez la boîte pour voir le dégradé tourner en douceur.</p>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — @property</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>85 (août 2020)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>85</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>16.4 (mars 2023)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>128 (juil. 2024)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/@property" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/mdn-css_at-rules_property" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-citron" id="starting">
+    <p class="fiche-date">≈ 2023 – 2024</p>
+    <h2>@starting-style <span class="fiche-fn">animer une apparition</span></h2>
+
+    <p class="fiche-explication"><code>@starting-style</code> définit la valeur de départ d'une propriété au moment où un élément apparaît, pour pouvoir l'animer en transition dès son affichage. Normalement, une transition ne se déclenche que sur un changement de valeur d'un élément déjà présent : impossible d'animer une apparition depuis <code>display: none</code>. Avec <code>@starting-style</code> et <code>transition-behavior: allow-discrete</code>, on définit un état juste avant l'affichage et le navigateur transitionne naturellement vers l'état final.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>.bulle {
+  display: none;
+  opacity: 0;
+  transition: opacity .3s, display .3s allow-discrete;
+}
+
+.case:checked ~ .bulle {
+  display: block;
+  opacity: 1;
+}
+
+@starting-style {
+  .case:checked ~ .bulle { opacity: 0; }
+}</code></pre>
+        <p class="fallback">Sans support, l'élément apparaît instantanément dès que <code>display</code> passe à <code>block</code>, sans fondu : ce n'est pas cassé, juste moins doux.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <input type="checkbox" id="ss-case" class="case">
+        <label for="ss-case" class="ss-label">Afficher la bulle</label>
+        <p class="bulle">J'apparais en douceur grâce à @starting-style.</p>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — @starting-style</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>117 (sept. 2023)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>117</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>17.5 (mai 2024)</td><td>Complet</td></tr>
+      <tr><td>Firefox</td><td>129 (août 2024)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/CSS/@starting-style" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/mdn-css_at-rules_starting-style" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+  <section class="fiche fiche-rouille" id="popover">
+    <p class="fiche-date">≈ 2023 – 2025</p>
+    <h2>popover <span class="fiche-fn">attribut HTML</span></h2>
+
+    <p class="fiche-explication">L'attribut <code>popover</code> transforme n'importe quel élément en fenêtre superposée, au-dessus du reste de la page, avec fermeture automatique au clic extérieur ou à la touche Échap, sans une ligne de JavaScript. On relie un bouton à son popover avec <code>popovertarget</code>, qui doit correspondre à l'id de l'élément portant l'attribut <code>popover</code>. Avant, ce genre de comportement demandait de gérer soi-même le z-index, les clics en dehors et le focus clavier.</p>
+
+    <div class="fiche-grille">
+      <div class="fiche-texte">
+        <pre><code>&lt;button popovertarget="ma-bulle"&gt;
+  Ouvrir l'info-bulle
+&lt;/button&gt;
+
+&lt;div id="ma-bulle" popover&gt;
+  Ceci est un popover natif.
+&lt;/div&gt;</code></pre>
+        <p class="fallback">Sans support, l'attribut est ignoré et l'élément reste affiché comme un bloc normal : il faut alors le masquer soi-même avec <code>display: none</code> et un peu de JavaScript pour rester utilisable partout.</p>
+      </div>
+
+      <div class="fiche-demo">
+        <button type="button" popovertarget="ma-bulle">Ouvrir l'info-bulle</button>
+        <div id="ma-bulle" popover class="popover-bulle">Ceci est un popover natif, sans JavaScript.</div>
+      </div>
+    </div>
+
+    <table class="compat">
+      <caption>Compatibilité — popover</caption>
+      <tr><th>Navigateur</th><th>Version minimale</th><th>Support</th></tr>
+      <tr><td>Chrome</td><td>116 (août 2023)</td><td>Complet</td></tr>
+      <tr><td>Edge</td><td>116</td><td>Complet</td></tr>
+      <tr><td>Safari</td><td>17 (sept. 2023)</td><td>Complet sur ordinateur, iOS complet depuis la 18.3</td></tr>
+      <tr><td>Firefox</td><td>125 (avr. 2024)</td><td>Complet</td></tr>
+    </table>
+    <p class="fiche-sources">Sources : <a href="https://developer.mozilla.org/fr/docs/Web/API/Popover_API" target="_blank" rel="noopener">MDN</a>, <a href="https://caniuse.com/mdn-html_global_attributes_popover" target="_blank" rel="noopener">Can I Use</a>.</p>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <p>nouveautés css — <a href="#sommaire-haut">Retour au sommaire</a></p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
